@@ -196,3 +196,467 @@ SELECT LoanType, COUNT(LoanType) AS 'Number of Loans'
 FROM SAM
 GROUP BY LoanType
 ORDER BY COUNT(LoanType) DESC;
+
+-- Query 2: Find the number of loans for each loan type and loan transaction type
+SELECT LoanType, LoanTransactionType, COUNT(LoanType) AS 'Number of Loans'
+FROM SAM
+GROUP BY LoanType, LoanTransactionType
+ORDER BY COUNT(LoanType) DESC;
+
+-- Query 3: Find the total number of unique property on which mortgage transactions have been made.
+SELECT COUNT(DISTINCT DPID) AS 'Number of Properties'
+FROM SAM;
+
+-- Query 4: Find the number of transactions for each lender type
+SELECT LenderType, COUNT(LenderType) AS 'Number of Transactions'
+FROM SAM
+GROUP BY LenderType
+ORDER BY COUNT(LenderType) DESC;
+
+-- Query 5: Find the number of transactions for each lender type and loan type
+SELECT LenderType, LoanType, COUNT(LenderType) AS 'Number of Transactions'
+FROM SAM
+GROUP BY LenderType, LoanType
+ORDER BY COUNT(LenderType) DESC;
+
+-- Query 6: Find the number of transactions where loan amount is greater than 2000000
+SELECT COUNT(LoanAmount) AS 'Number of Transactions'
+FROM SAM
+WHERE LoanAmount > 2000000;
+
+-- Query 7: Find the number of transactions where loan amount is greater than 2000000 and loan type is not equal to 1
+SELECT COUNT(LoanAmount) AS 'Number of Transactions'
+FROM SAM
+WHERE LoanAmount > 2000000 AND LoanType != 1;
+
+-- Query 8: Find the number of transactions for where borrower name contains 'LLC'
+SELECT COUNT(Borrower1LastNameOeCorporationName) AS 'Number of Transactions'
+FROM SAM
+WHERE Borrower1LastNameOeCorporationName LIKE '%LLC%';
+
+-- Query 9: Find the number of transactions for each property that happened after 2010
+SELECT DPID, COUNT(DPID) AS 'Number of Transactions'
+FROM SAM
+WHERE RecordingDate > 20100101
+GROUP BY DPID
+ORDER BY COUNT(DPID) DESC;
+
+-- Query 10: Find the count for column LenderMailCity where value is null or empty or empty string
+SELECT COUNT(LenderMailCity) AS 'Number of Transactions'
+FROM SAM
+WHERE LenderMailCity IS NULL OR LenderMailCity = '' OR LenderMailCity = ' ';
+
+
+-- Query 11: Find the top 10 borrowers by amount of total loan amount
+SELECT Borrower1LastNameOeCorporationName, SUM(LoanAmount) AS 'Total Loan Amount'
+FROM SAM
+GROUP BY Borrower1LastNameOeCorporationName
+ORDER BY SUM(LoanAmount) DESC
+LIMIT 10;
+
+/* Query 12: Find the total loan amount for each borrower.
+If a particular loan is taken by a group of two borrowers, 
+then name of the second borrower will come here in Borrower2LastNameOrCorporationName Column.*/
+SELECT Borrower1LastNameOeCorporationName, SUM(LoanAmount) AS 'Total Loan Amount'
+FROM SAM
+GROUP BY Borrower1LastNameOeCorporationName
+ORDER BY SUM(LoanAmount) DESC;
+
+/* Query 13: I want to flatten my tables based on borrower and create a new table called Flattened_Table with the following columns: 
+    TransactionId: Holds the value of the PID column from the SAM table as Foreign Key.
+    Borrower (Please check that trimmed value is not empty or null): 
+        1. For SAM Table it will hold the value of borrower1_full_name and borrower2_full_name as different rows only if there value is not null and there trimmed value is not empty as well and contains following string ["TRUST", "INC", "LLP", "LP"].
+    LoanAmount: Holds the value of the LoanAmount column from the SAM table.
+    PropertyFullStreetAddress: Holds the value of the PropertyFullStreetAddress column from the SAM table.
+    OriginalDateOfContract: Holds the value of the OriginalDateOfContract column from the SAM table.
+    LenderNameBeneficiary: Holds the value of the LenderNameBeneficiary column from the SAM table.
+    PropertyState: Holds the value of the PropertyState column from the SAM table.
+    PropertyCityName: Holds the value of the PropertyCityName column from the SAM table.
+    BuyerMailFullStreetAddress: Holds the value of the BuyerMailFullStreetAddress column from the SAM table.
+    BorrowerMailCity: Holds the value of the BorrowerMailCity column from the SAM table.
+    BorrowerMailState: Holds the value of the BorrowerMailState column from the SAM table.
+    Source: Holds the name of the table from which the data is coming. In this case, it will be SAM.
+*/
+
+CREATE TABLE Flattened_Table AS
+SELECT 
+    PID AS TransactionId,
+    borrower1_full_name AS Borrower,
+    LoanAmount,
+    PropertyFullStreetAddress,
+    OriginalDateOfContract,
+    LenderNameBeneficiary,
+    PropertyState,
+    PropertyCityName,
+    BuyerMailFullStreetAddress,
+    BorrowerMailCity,
+    BorrowerMailState,
+    'SAM' AS Source
+FROM SAM
+WHERE borrower1_full_name IS NOT NULL 
+AND TRIM(borrower1_full_name) != ''
+AND (borrower1_full_name LIKE '%TRUST%' OR borrower1_full_name LIKE '%INC%' OR borrower1_full_name LIKE '%LLP%' OR borrower1_full_name LIKE '%LP%')
+UNION ALL
+SELECT 
+    PID AS TransactionId,
+    borrower2_full_name AS Borrower,
+    LoanAmount,
+    PropertyFullStreetAddress,
+    OriginalDateOfContract,
+    LenderNameBeneficiary,
+    PropertyState,
+    PropertyCityName,
+    BuyerMailFullStreetAddress,
+    BorrowerMailCity,
+    BorrowerMailState,
+    'SAM' AS Source
+FROM SAM
+WHERE borrower2_full_name IS NOT NULL 
+AND TRIM(borrower2_full_name) != ''
+AND (borrower2_full_name LIKE '%TRUST%' OR borrower2_full_name LIKE '%INC%' OR borrower2_full_name LIKE '%LLP%' OR borrower2_full_name LIKE '%LP%');
+
+
+-- Query 14: Give me numbers of transactions where Borrower1LastNameOeCorporationName is null or empty
+SELECT COUNT(Borrower1LastNameOeCorporationName) AS 'Number of Transactions'
+FROM SAM
+WHERE Borrower1LastNameOeCorporationName IS NULL OR Borrower1LastNameOeCorporationName = '' OR Borrower1LastNameOeCorporationName = ' ';
+
+-- Query 15: First find top 100 lenders by total loan amount and then find the borrowers for those lenders
+SELECT Borrower1LastNameOeCorporationName, SUM(LoanAmount) AS 'Total Loan Amount'
+FROM SAM
+WHERE LenderNameBeneficiary IN (
+    SELECT LenderNameBeneficiary
+    FROM SAM
+    GROUP BY LenderNameBeneficiary
+    ORDER BY SUM(LoanAmount) DESC
+    LIMIT 100
+)
+GROUP BY Borrower1LastNameOeCorporationName
+ORDER BY SUM(LoanAmount) DESC;
+
+
+
+
+/* MongoDB Queries */
+
+-- Can you please convert all the above queries into MongoDB queries?
+
+/*  Query 1: Find the number of loans for each loan type */ 
+db.SAM.aggregate([
+    {
+        $group: {
+            _id: "$LoanType",
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 2: Find the number of loans for each loan type and loan transaction type */
+db.SAM.aggregate([
+    {
+        $group: {
+            _id: { LoanType: "$LoanType", LoanTransactionType: "$LoanTransactionType" },
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 3: Find the total number of unique property on which mortgage transactions have been made. */
+db.SAM.aggregate([
+    {
+        $group: {
+            _id: "$DPID",
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 4: Find the number of transactions for each lender type */
+db.SAM.aggregate([
+    {
+        $group: {
+            _id: "$LenderType",
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 5: Find the number of transactions for each lender type and loan type */
+db.SAM.aggregate([
+    {
+        $group: {
+            _id: { LenderType: "$LenderType", LoanType: "$LoanType" },
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 6: Find the number of transactions where loan amount is greater than 2000000 */
+db.SAM.aggregate([
+    {
+        $match: {
+            LoanAmount: { $gt: 2000000 }
+        }
+    },
+    {
+        $group: {
+            _id: "$LoanAmount",
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 7: Find the number of transactions where loan amount is greater than 2000000 and loan type is not equal to 1 */
+db.SAM.aggregate([
+    {
+        $match: {
+            LoanAmount: { $gt: 2000000 },
+            LoanType: { $ne: 1 }
+        }
+    },
+    {
+        $group: {
+            _id: "$LoanAmount",
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 8: Find the number of transactions for where borrower name contains 'LLC' */
+db.SAM.aggregate([
+    {
+        $match: {
+            Borrower1LastNameOeCorporationName: /LLC/
+        }
+    },
+    {
+        $group: {
+            _id: "$Borrower1LastNameOeCorporationName",
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 9: Find the number of transactions for each property that happened after 2010 */
+db.SAM.aggregate([
+    {
+        $match: {
+            RecordingDate: { $gt: 20100101 }
+        }
+    },
+    {
+        $group: {
+            _id: "$DPID",
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 10: Find the count for column LenderMailCity where value is null or empty or empty string */
+db.SAM.aggregate([
+    {
+        $match: {
+            $or: [
+                { LenderMailCity: null },
+                { LenderMailCity: "" },
+                { LenderMailCity: " " }
+            ]
+        }
+    },
+    {
+        $group: {
+            _id: "$LenderMailCity",
+            count: { $sum: 1 }
+        }
+    }
+]);
+
+/*  Query 11: Find the top 10 borrowers by amount of total loan amount */
+db.SAM.aggregate([
+    {
+        $group: {
+            _id: "$Borrower1LastNameOeCorporationName",
+            TotalLoanAmount: { $sum: "$LoanAmount" }
+        }
+    },
+    {
+        $sort: {
+            TotalLoanAmount: -1
+        }
+    },
+    {
+        $limit: 10
+    }
+]);
+
+/*  Query 12: Find the total loan amount for each borrower.
+If a particular loan is taken by a group of two borrowers, then name of the second borrower will come here in Borrower2LastNameOrCorporationName Column.*/
+db.SAM.aggregate([
+    {
+        $group: {
+            _id: { Borrower1LastNameOeCorporationName: "$Borrower1LastNameOeCorporationName", Borrower2LastNameOrCorporationName: "$Borrower2LastNameOrCorporationName" },
+            TotalLoanAmount: { $sum: "$LoanAmount" }
+        }
+    },
+    {
+        $sort: {
+            TotalLoanAmount: -1
+        }
+    }
+]);
+
+/*  Query 13: I want to flatten my tables based on borrower and create a new table called Flattened_Table with the following columns: 
+    TransactionId: Holds the value of the PID column from the SAM table as Foreign Key.
+    Borrower (Please check that trimmed value is not empty or null): 
+        1. For SAM Table it will hold the value of Borrower1LastNameOeCorporationName and Borrower2LastNameOrCorporationName as different rows if there value is not null and there trimmed value is not empty as well.
+        2. For DEED Table it will hold the value of Buyer1LastNameOrCorporation and Buyer2LastNameOrCorporation as different rows if there value is not null and there trimmed value is not empty as well.
+    LoanAmount: Holds the value of the LoanAmount column from the SAM table.
+    PropertyFullStreetAddress: Holds the value of the PropertyFullStreetAddress column from the SAM table.
+    OriginalDateOfContract: Holds the value of the OriginalDateOfContract column from the SAM table.
+    LenderNameBeneficiary: Holds the value of the LenderNameBeneficiary column from the SAM table.
+    PropertyState: Holds the value of the PropertyState column from the SAM table.
+    PropertyCityName: Holds the value of the PropertyCityName column from the SAM table.
+    Source: Holds the name of the table from which the data is coming. In this case, it will be SAM.
+*/
+
+/* Unoptimized Query */
+
+db.createCollection("Flattened_Table");
+ 
+db.SAM.find({
+  $or: [
+    { Borrower1LastNameOeCorporationName: { $ne: null, $ne: "" } },
+    { Borrower2LastNameOrCorporationName: { $ne: null, $ne: "" } }
+  ]
+}).forEach(function(doc) {
+  if (doc.Borrower1LastNameOeCorporationName) {
+    db.Flattened_Table.insert({
+      TransactionId: doc.PID,
+      Borrower: doc.Borrower1LastNameOeCorporationName,
+      LoanAmount: doc.LoanAmount,
+      PropertyFullStreetAddress: doc.PropertyFullStreetAddress,
+      OriginalDateOfContract: doc.OriginalDateOfContract,
+      LenderNameBeneficiary: doc.LenderNameBeneficiary,
+      PropertyState: doc.PropertyState,
+      PropertyCityName: doc.PropertyCityName,
+      Source: "SAM"
+    });
+  }
+  if (doc.Borrower2LastNameOrCorporationName) {
+    db.Flattened_Table.insert({
+      TransactionId: doc.PID,
+      Borrower: doc.Borrower2LastNameOrCorporationName,
+      LoanAmount: doc.LoanAmount,
+      PropertyFullStreetAddress: doc.PropertyFullStreetAddress,
+      OriginalDateOfContract: doc.OriginalDateOfContract,
+      LenderNameBeneficiary: doc.LenderNameBeneficiary,
+      PropertyState: doc.PropertyState,
+      PropertyCityName: doc.PropertyCityName,
+      Source: "SAM"
+    });
+  }
+});
+
+/* Optimized Query */
+
+-- Create the Flattened_Table collection
+db.createCollection("Flattened_Table");
+
+-- Perform the aggregation to generate the documents for insertion
+db.SAM.aggregate([
+  {
+    $match: {
+      $or: [
+        { Borrower1LastNameOeCorporationName: { $ne: null, $ne: "" } },
+        { Borrower2LastNameOrCorporationName: { $ne: null, $ne: "" } }
+      ]
+    }
+  },
+  {
+    $project: {
+      TransactionId: "$PID",
+      Borrower1LastNameOeCorporationName: 1,
+      Borrower2LastNameOrCorporationName: 1,
+      LoanAmount: 1,
+      PropertyFullStreetAddress: 1,
+      OriginalDateOfContract: 1,
+      LenderNameBeneficiary: 1,
+      PropertyState: 1,
+      PropertyCityName: 1,
+      Source: "SAM"
+    }
+  },
+  {
+    $facet: {
+      borrowers1: [
+        {
+          $match: {
+            Borrower1LastNameOeCorporationName: { $ne: null, $ne: "" }
+          }
+        },
+        {
+          $project: {
+            TransactionId: 1,
+            Borrower: "$Borrower1LastNameOeCorporationName",
+            LoanAmount: 1,
+            PropertyFullStreetAddress: 1,
+            OriginalDateOfContract: 1,
+            LenderNameBeneficiary: 1,
+            PropertyState: 1,
+            PropertyCityName: 1,
+            Source: 1
+          }
+        }
+      ],
+      borrowers2: [
+        {
+          $match: {
+            Borrower2LastNameOrCorporationName: { $ne: null, $ne: "" }
+          }
+        },
+        {
+          $project: {
+            TransactionId: 1,
+            Borrower: "$Borrower2LastNameOrCorporationName",
+            LoanAmount: 1,
+            PropertyFullStreetAddress: 1,
+            OriginalDateOfContract: 1,
+            LenderNameBeneficiary: 1,
+            PropertyState: 1,
+            PropertyCityName: 1,
+            Source: 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    $project: {
+      flattened: { $concatArrays: ["$borrowers1", "$borrowers2"] }
+    }
+  },
+  {
+    $unwind: "$flattened"
+  },
+  {
+    $replaceRoot: { newRoot: "$flattened" }
+  },
+  {
+    $out: "Flattened_Table"
+  }
+]);
+
+/* Query 14: Give me numbers of transactions where Borrower1LastNameOeCorporationName is null or empty */
+db.SAM.aggregate([
+    {
+        $match: {
+            Borrower1LastNameOeCorporationName: { $eq: null, $eq: "", $eq: " " }
+        }
+    },
+    {
+        $group: {
+            _id: "$Borrower1LastNameOeCorporationName",
+            count: { $sum: 1 }
+        }
+    }
+]);

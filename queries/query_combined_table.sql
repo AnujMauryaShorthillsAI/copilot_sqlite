@@ -364,3 +364,9 @@ CREATE TABLE IF NOT EXISTS Deed (
 );
 
 /* Queries */
+-- Query 1: Find ten random properties from SAM Table and return the all the deeds associated with those properties using join.
+SELECT * FROM SAM
+JOIN Deed
+ON SAM.DPID = Deed.DPID
+ORDER BY RANDOM()
+LIMIT 10;
