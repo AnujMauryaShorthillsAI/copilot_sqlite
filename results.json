@@ -1,0 +1,66 @@
+[
+    {
+        "LoanType": "U",
+        "Number of Loans": 861
+    },
+    {
+        "LoanType": "E",
+        "Number of Loans": 599
+    },
+    {
+        "LoanType": "N",
+        "Number of Loans": 585
+    },
+    {
+        "LoanType": "O",
+        "Number of Loans": 132
+    },
+    {
+        "LoanType": "2",
+        "Number of Loans": 128
+    },
+    {
+        "LoanType": "F",
+        "Number of Loans": 92
+    },
+    {
+        "LoanType": "G",
+        "Number of Loans": 41
+    },
+    {
+        "LoanType": "W",
+        "Number of Loans": 32
+    },
+    {
+        "LoanType": "1",
+        "Number of Loans": 32
+    },
+    {
+        "LoanType": "J",
+        "Number of Loans": 27
+    },
+    {
+        "LoanType": "V",
+        "Number of Loans": 22
+    },
+    {
+        "LoanType": "3",
+        "Number of Loans": 22
+    },
+    {
+        "LoanType": "Z",
+        "Number of Loans": 17
+    },
+    {
+        "LoanType": "H",
+        "Number of Loans": 15
+    },
+    {
+        "LoanType": "B",
+        "Number of Loans": 15
+    },
+    {
+        "LoanType": "6",
+        "Number of Loans": 1
+    }
+]
